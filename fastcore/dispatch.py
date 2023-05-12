@@ -90,8 +90,7 @@ class TypeDispatch:
 
     def add(self, f):
         "Add type `t` and function `f`"
-        if isinstance(f, staticmethod): a0,a1 = _p2_anno(f.__func__)
-        else: a0,a1 = _p2_anno(f)
+        a0,a1 = _p2_anno(f.__func__) if isinstance(f, staticmethod) else _p2_anno(f)
         t = self.funcs.d.get(a0)
         if t is None:
             t = _TypeDict()
@@ -110,7 +109,7 @@ class TypeDispatch:
     def __repr__(self):
         r = [f'({self._attname(k)},{self._attname(l)}) -> {getattr(v, "__name__", type(v).__name__)}'
              for k in self.funcs.d for l,v in self.funcs[k].d.items()]
-        r = r + [o.__repr__() for o in self.bases]
+        r += [o.__repr__() for o in self.bases]
         return '\n'.join(r)
 
     def __call__(self, *args, **kwargs):
@@ -200,16 +199,14 @@ def retain_type(new, old=None, typ=None, as_copy=False):
 def retain_types(new, old=None, typs=None):
     "Cast each item of `new` to type of matching item in `old` if it's a superclass"
     if not is_listy(new): return retain_type(new, old, typs)
-    if typs is not None:
-        if isinstance(typs, dict):
-            t = first(typs.keys())
-            typs = typs[t]
-        else: t,typs = typs,None
-    else: t = type(old) if old is not None and isinstance(old,type(new)) else type(new)
+    if typs is None: t = type(old) if old is not None and isinstance(old,type(new)) else type(new)
+    elif isinstance(typs, dict):
+        t = first(typs.keys())
+        typs = typs[t]
+    else: t,typs = typs,None
     return t(L(new, old, typs).map_zip(retain_types, cycled=True))
 
 # Cell
 def explode_types(o):
     "Return the type of `o`, potentially in nested dictionaries for thing that are listy"
-    if not is_listy(o): return type(o)
-    return {type(o): [explode_types(o_) for o_ in o]}
+    return {type(o): [explode_types(o_) for o_ in o]} if is_listy(o) else type(o)

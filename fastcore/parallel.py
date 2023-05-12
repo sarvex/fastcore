@@ -59,7 +59,7 @@ def _call(lock, pause, n, g, item):
 
 # Cell
 def parallelable(param_name, num_workers, f=None):
-    f_in_main = f == None or sys.modules[f.__module__].__name__ == "__main__"
+    f_in_main = f is None or sys.modules[f.__module__].__name__ == "__main__"
     if sys.platform == "win32" and IN_NOTEBOOK and num_workers > 0 and f_in_main:
         print("Due to IPython and Windows limitation, python multiprocessing isn't available now.")
         print(f"So `{param_name}` has to be changed to 0 to avoid getting stuck")
@@ -99,7 +99,7 @@ class ProcessPoolExecutor(concurrent.futures.ProcessPoolExecutor):
         self.not_parallel = self.max_workers==0
         if self.not_parallel: self.max_workers=1
 
-        if self.not_parallel == False: self.lock = Manager().Lock()
+        if not self.not_parallel: self.lock = Manager().Lock()
         g = partial(f, *args, **kwargs)
         if self.not_parallel: return map(g, items)
         _g = partial(_call, self.lock, self.pause, self.max_workers, g)

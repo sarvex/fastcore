@@ -44,8 +44,7 @@ class _TfmMeta(type):
 # Cell
 def _get_name(o):
     if hasattr(o,'__qualname__'): return o.__qualname__
-    if hasattr(o,'__name__'): return o.__name__
-    return o.__class__.__name__
+    return o.__name__ if hasattr(o,'__name__') else o.__class__.__name__
 
 # Cell
 def _is_tuple(o): return isinstance(o, tuple) and not hasattr(o, '_fields')
@@ -161,9 +160,10 @@ def gather_attrs(o, k, nm):
     "Used in __getattr__ to collect all attrs `k` from `self.{nm}`"
     if k.startswith('_') or k==nm: raise AttributeError(k)
     att = getattr(o,nm)
-    res = [t for t in att.attrgot(k) if t is not None]
-    if not res: raise AttributeError(k)
-    return res[0] if len(res)==1 else L(res)
+    if res := [t for t in att.attrgot(k) if t is not None]:
+        return res[0] if len(res)==1 else L(res)
+    else:
+        raise AttributeError(k)
 
 # Cell
 def gather_attr_names(o, nm):
@@ -223,5 +223,4 @@ class Pipeline:
 
     def _is_showable(self, o):
         if hasattr(o, 'show'): return True
-        if _is_tuple(o): return all(hasattr(o_, 'show') for o_ in o)
-        return False
+        return all(hasattr(o_, 'show') for o_ in o) if _is_tuple(o) else False

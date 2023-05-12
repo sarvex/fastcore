@@ -204,7 +204,7 @@ def loads(s, cls=None, object_hook=None, parse_float=None,
 def loads_multi(s:str):
     "Generator of >=0 decoded json dicts, possibly with non-json ignored text at start and end"
     _dec = json.JSONDecoder()
-    while s.find('{')>=0:
+    while '{' in s:
         s = s[s.find('{'):]
         obj,pos = _dec.raw_decode(s)
         if not pos: raise ValueError(f'no JSON object found at {pos}')
@@ -252,7 +252,8 @@ def run(cmd, *rest, same_in_win=False, ignore_ex=False, as_bytes=False, stderr=F
         else:
             cmd = (cmd,)+rest
     elif isinstance(cmd, str):
-        if sys.platform == 'win32' and same_in_win: cmd = 'cmd /c ' + cmd
+        if sys.platform == 'win32' and same_in_win:
+            cmd = f'cmd /c {cmd}'
         cmd = shlex.split(cmd)
     elif isinstance(cmd, list):
         if sys.platform == 'win32' and same_in_win: cmd = ['cmd', '/c'] + cmd
@@ -314,7 +315,12 @@ def relpath(self:Path, start=None):
 def ls(self:Path, n_max=None, file_type=None, file_exts=None):
     "Contents of path as a list"
     extns=L(file_exts)
-    if file_type: extns += L(k for k,v in mimetypes.types_map.items() if v.startswith(file_type+'/'))
+    if file_type:
+        extns += L(
+            k
+            for k, v in mimetypes.types_map.items()
+            if v.startswith(f'{file_type}/')
+        )
     has_extns = len(extns)==0
     res = (o for o in self.iterdir() if has_extns or o.suffix in extns)
     if n_max is not None: res = itertools.islice(res, n_max)
@@ -323,8 +329,7 @@ def ls(self:Path, n_max=None, file_type=None, file_exts=None):
 # Cell
 @patch
 def __repr__(self:Path):
-    b = getattr(Path, 'BASE_PATH', None)
-    if b:
+    if b := getattr(Path, 'BASE_PATH', None):
         try: self = self.relative_to(b)
         except: pass
     return f"Path({self.as_posix()!r})"
@@ -490,7 +495,7 @@ def modified_env(*delete, **replace):
         yield
     finally:
         os.environ.clear()
-        os.environ.update(prev)
+        os.environ |= prev
 
 # Cell
 class ContextManagers(GetAttr):

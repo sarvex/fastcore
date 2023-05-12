@@ -57,7 +57,7 @@ def mask2idxs(mask):
     "Convert bool mask or index list to index `L`"
     if isinstance(mask,slice): return mask
     mask = list(mask)
-    if len(mask)==0: return []
+    if not mask: return []
     it = mask[0]
     if hasattr(it,'item'): it = it.item()
     if is_bool(it): return [i for i,m in enumerate(mask) if m]
@@ -129,8 +129,7 @@ class L(GetAttr, CollBase, metaclass=_L_Meta):
     def __eq__(self,b):
         if b is None: return False
         if risinstance('ndarray', b): return array_equal(b, self)
-        if isinstance(b, (str,dict)): return False
-        return all_equal(b,self)
+        return False if isinstance(b, (str,dict)) else all_equal(b,self)
 
     def sorted(self, key=None, reverse=False): return self._new(sorted_ex(self, key=key, reverse=reverse))
     def __iter__(self): return iter(self.items.itertuples() if hasattr(self.items,'iloc') else self.items)
@@ -140,12 +139,15 @@ class L(GetAttr, CollBase, metaclass=_L_Meta):
     def __repr__(self): return repr(self.items)
     def _repr_pretty_(self, p, cycle):
         p.text('...' if cycle else repr(self.items) if is_array(self.items) else coll_repr(self))
-    def __mul__ (a,b): return a._new(a.items*b)
-    def __add__ (a,b): return a._new(a.items+listify(b))
-    def __radd__(a,b): return a._new(b)+a
-    def __addi__(a,b):
-        a.items += list(b)
-        return a
+    def __mul__(self, b):
+        return self._new(self.items * b)
+    def __add__(self, b):
+        return self._new(self.items + listify(b))
+    def __radd__(self, b):
+        return self._new(b) + self
+    def __addi__(self, b):
+        self.items += list(b)
+        return self
 
     @classmethod
     def split(cls, s, sep=None, maxsplit=-1): return cls(s.split(sep,maxsplit))
@@ -253,11 +255,11 @@ class Config:
         cfg_path = Path(cfg_path).expanduser().absolute()
         self.config_path,self.config_file = cfg_path,cfg_path/cfg_name
         if not self.config_file.exists():
-            if create:
-                self.d = create
-                cfg_path.mkdir(exist_ok=True, parents=True)
-                self.save()
-            else: raise FileNotFoundError(f"Could not find {cfg_name}")
+            if not create:
+                raise FileNotFoundError(f"Could not find {cfg_name}")
+            self.d = create
+            cfg_path.mkdir(exist_ok=True, parents=True)
+            self.save()
         self.d = read_config_file(self.config_file)
 
     def __setitem__(self,k,v): self.d[k] = str(v)

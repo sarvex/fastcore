@@ -32,9 +32,9 @@ class FixSigMeta(type):
 # Cell
 class PrePostInitMeta(FixSigMeta):
     "A metaclass that calls optional `__pre_init__` and `__post_init__` methods"
-    def __call__(cls, *args, **kwargs):
-        res = cls.__new__(cls)
-        if type(res)==cls:
+    def __call__(self, *args, **kwargs):
+        res = self.__new__(self)
+        if type(res) == self:
             if hasattr(res,'__pre_init__'): res.__pre_init__(*args,**kwargs)
             res.__init__(*args,**kwargs)
             if hasattr(res,'__post_init__'): res.__post_init__(*args,**kwargs)
@@ -50,8 +50,7 @@ class NewChkMeta(FixSigMeta):
     "Metaclass to avoid recreating object passed to constructor"
     def __call__(cls, x=None, *args, **kwargs):
         if not args and not kwargs and x is not None and isinstance(x,cls): return x
-        res = super().__call__(*((x,) + args), **kwargs)
-        return res
+        return super().__call__(*((x,) + args), **kwargs)
 
 # Cell
 class BypassNewMeta(FixSigMeta):

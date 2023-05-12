@@ -104,7 +104,7 @@ def get_class(nm, *fld_names, sup=None, doc=None, funcs=None, **flds):
 
     all_flds = [*fld_names,*flds.keys()]
     def _eq(self,b):
-        return all([getattr(self,k)==getattr(b,k) for k in all_flds])
+        return all(getattr(self,k)==getattr(b,k) for k in all_flds)
 
     if not sup: attrs['__repr__'] = basic_repr(all_flds)
     attrs['__init__'] = _init
@@ -246,10 +246,9 @@ def get_annotations_ex(obj, *, globals=None, locals=None):
         else: ann = None
 
         obj_globals = None
-        module_name = getattr(obj, '__module__', None)
-        if module_name:
-            module = sys.modules.get(module_name, None)
-            if module: obj_globals = getattr(module, '__dict__', None)
+        if module_name := getattr(obj, '__module__', None):
+            if module := sys.modules.get(module_name, None):
+                obj_globals = getattr(module, '__dict__', None)
         obj_locals = dict(vars(obj))
         unwrap = obj
     elif isinstance(obj, types.ModuleType):
@@ -362,7 +361,7 @@ def store_attr(names=None, self=None, but='', cast=False, store_args=None, **att
     if names and isinstance(names,str): names = re.split(', *', names)
     ns = names if names is not None else getattr(self, '__slots__', args[1:])
     added = {n:fr.f_locals[n] for n in ns}
-    attrs = {**attrs, **added}
+    attrs |= added
     if isinstance(but,str): but = re.split(', *', but)
     attrs = {k:v for k,v in attrs.items() if k not in but}
     return _store_attr(self, anno, **attrs)
@@ -465,7 +464,8 @@ def delegate_attr(self, k, to):
 #hide
 class ShowPrint:
     "Base class that prints for `show`"
-    def show(self, *args, **kwargs): print(str(self))
+    def show(self, *args, **kwargs):
+        print(self)
 
 # Cell
 #hide
@@ -595,8 +595,7 @@ def filter_ex(iterable, f=noop, negate=False, gen=False, **kwargs):
     if kwargs: f = partial(f,**kwargs)
     if negate: f = not_(f)
     res = filter(f, iterable)
-    if gen: return res
-    return list(res)
+    return res if gen else list(res)
 
 # Cell
 def range_of(a, b=None, step=None):
@@ -756,8 +755,7 @@ def map_ex(iterable, f, *args, gen=False, **kwargs):
          else f.format if isinstance(f,str)
          else f.__getitem__)
     res = map(g, iterable)
-    if gen: return res
-    return list(res)
+    return res if gen else list(res)
 
 # Cell
 def compose(*funcs, order=None):

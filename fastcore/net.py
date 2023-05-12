@@ -47,9 +47,8 @@ url_default_headers = {
 def urlquote(url):
     "Update url's path with `urllib.parse.quote`"
     subdelims = "!$&'()*+,;="
-    gendelims = ":?#[]@"
-    safe = subdelims+gendelims+"%/"
     p = list(urlparse(url))
+    safe = f"{subdelims}:?#[]@%/"
     p[2] = urllib.parse.quote(p[2], safe=safe)
     for i in range(3,6): p[i] = urllib.parse.quote(p[i], safe=safe)
     return urlunparse(p)
@@ -187,7 +186,8 @@ def urlvalid(x):
 def urlrequest(url, verb, headers=None, route=None, query=None, data=None, json_data=True):
     "`Request` for `url` with optional route params replaced by `route`, plus `query` string, and post `data`"
     if route: url = url.format(**route)
-    if query: url += '?' + urlencode(query)
+    if query:
+        url += f'?{urlencode(query)}'
     if isinstance(data,dict): data = (json.dumps if json_data else urlencode)(data).encode('ascii')
     return Request(url, headers=headers or {}, data=data or None, method=verb.upper())
 
@@ -217,7 +217,7 @@ def do_request(url, post=False, headers=None, **data):
     if data:
         if post: data = json.dumps(data).encode('ascii')
         else:
-            url += "?" + urlencode(data)
+            url += f"?{urlencode(data)}"
             data = None
     return urljson(Request(url, headers=headers, data=data or None))
 

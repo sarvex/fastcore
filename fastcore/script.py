@@ -12,12 +12,10 @@ from .docments import docments
 # Cell
 def store_true():
     "Placeholder to pass to `Param` for `store_true` action"
-    pass
 
 # Cell
 def store_false():
     "Placeholder to pass to `Param` for `store_false` action"
-    pass
 
 # Cell
 def bool_arg(v):
@@ -26,7 +24,7 @@ def bool_arg(v):
 
 # Cell
 def clean_type_str(x:str):
-    x = str(x)
+    x = x
     x = re.sub("(enum |class|function|__main__\.|\ at.*)", '', x)
     x = re.sub("(<|>|'|\ )", '', x) # spl characters
     return x
@@ -53,10 +51,10 @@ class Param:
     def kwargs(self): return {k:v for k,v in self.__dict__.items()
                               if v is not None and k!='opt' and k[0]!='_'}
     def __repr__(self):
-        if not self.help and self.type is None: return ""
-        if not self.help and self.type is not None: return f"{clean_type_str(self.type)}"
-        if self.help and self.type is None: return f"<{self.help}>"
-        if self.help and self.type is not None: return f"{clean_type_str(self.type)} <{self.help}>"
+        if not self.help:
+            return "" if self.type is None else f"{clean_type_str(self.type)}"
+        if self.type is None: return f"<{self.help}>"
+        return f"{clean_type_str(self.type)} <{self.help}>"
 
 # Cell
 class _HelpFormatter(argparse.HelpFormatter):
@@ -74,8 +72,8 @@ def anno_parser(func, prog=None, from_name=False):
         if not isinstance(param,Param): param = Param(v.docment, v.anno)
         param.set_default(v.default)
         p.add_argument(f"{param.pre}{k}", **param.kwargs)
-    p.add_argument(f"--pdb", help=argparse.SUPPRESS, action='store_true')
-    p.add_argument(f"--xtra", help=argparse.SUPPRESS, type=str)
+    p.add_argument("--pdb", help=argparse.SUPPRESS, action='store_true')
+    p.add_argument("--xtra", help=argparse.SUPPRESS, type=str)
     return p
 
 # Cell
@@ -86,8 +84,8 @@ def args_from_prog(func, prog):
     progsp = prog.split("#")
     args = {progsp[i]:progsp[i+1] for i in range(0, len(progsp), 2)}
     for k,v in args.items():
-        t = func.__annotations__.get(k, Param()).type
-        if t: args[k] = t(v)
+        if t := func.__annotations__.get(k, Param()).type:
+            args[k] = t(v)
     return args
 
 # Cell
